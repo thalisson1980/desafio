@@ -6,6 +6,8 @@ import org.apache.spark.sql.functions.{col, desc}
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructField, StructType}
 import org.json4s.scalap.scalasig.ClassFileParser.header
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
  * @author ${user.name}
  */
@@ -32,13 +34,13 @@ object App {
       StructField("Android Ver", StringType, true)
 
     ))
+
     val df2 = spark.read.option("header",true).schema(simpleSchema).options(Map("inferSchema"->"true","delimiter"->","))
       .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore.csv")
 
-    val df3 = df2.filter("rating >= 4 and rating <= 10").orderBy(desc("rating")).show()
+    val df3 = df2.filter("rating >= 4 and rating <= 10").orderBy(desc("rating"))
 
-   // df3.write.format("csv").save("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/best_apps.csv")
-  //  df3.repartition(1).write.csv(path="C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/best_apps.csv")
+
   }
 
 }
