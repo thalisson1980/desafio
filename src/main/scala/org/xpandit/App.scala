@@ -16,15 +16,23 @@ object App {
 
     val simpleSchema = StructType(Array(
       StructField("App",StringType,true),
-      StructField("Translated_Review",StringType,true),
-      StructField("Sentiment",StringType,true),
-      StructField("Sentiment_Polarity", DoubleType, true),
-      StructField("Sentiment_Subjectivity", FloatType, true)
+      StructField("Category",StringType,true),
+      StructField("Rating",DoubleType,true),
+      StructField("Reviews", DoubleType, true),
+      StructField("Size", StringType, true),
+      StructField("Installs", StringType, true),
+      StructField("Type", StringType, true),
+      StructField("Price", DoubleType, true),
+      StructField("Genres", StringType, true),
+      StructField("Last Updated", StringType, true),
+      StructField("Current Ver", StringType, true),
+      StructField("Android Ver", StringType, true)
+
     ))
-    val df2 = spark.read.schema(simpleSchema).options(Map("inferSchema"->"true","delimiter"->","))
-      .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore_user_reviews.csv")
-    
-    df2.na.fill(0).groupBy("app").avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity").show(false)
+    val df2 = spark.read.option("header",true).schema(simpleSchema).options(Map("inferSchema"->"true","delimiter"->","))
+      .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore.csv")
+
+    df2.show()
 
   }
 
