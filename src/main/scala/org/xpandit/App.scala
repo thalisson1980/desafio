@@ -27,6 +27,13 @@ object App {
       StructField("Sentiment_Subjectivity", FloatType, true)
     ))
 
+    val simpleSchema3 = StructType(Array(
+     // StructField("Genre", StringType, true),
+      StructField("Count", DoubleType, true),
+      StructField("Average_Rating", DoubleType, true)//,
+      //StructField("Average_Sentiment_Polarity", DoubleType, true)
+    ))
+
 
     val simpleSchema = StructType(Array(
       StructField("App", StringType, true),
@@ -60,17 +67,17 @@ object App {
     var genresDF = df2.select(df2("Genres")).distinct().collect()
     var genres: ArrayBuffer[String] = new ArrayBuffer[String]
     genres.append("Education")
-    genresDF.foreach( row => {
+    genresDF.foreach(row => {
       var resultSplit = row.getString(0).split(";")
-      resultSplit.foreach( splitGenre => {
+      resultSplit.foreach(splitGenre => {
         var alreadyExists = false
-        genres.foreach(genre =>{
-          if(genre == splitGenre){
+        genres.foreach(genre => {
+          if (genre == splitGenre) {
 
-              alreadyExists = true
+            alreadyExists = true
           }
         })
-        if(!alreadyExists){
+        if (!alreadyExists) {
           genres.append(splitGenre)
         }
       })
@@ -87,30 +94,44 @@ object App {
 
 
     var newDf = spark.sql(
-      s"""SELECT first(App) as App, collect_set(Category) as Values,
-         | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
-         | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
+      s"""SELECT first(App) as App, collect_set(Category) as Categories,
+         | first(Rating) as Rating, max(Reviews) as Reviews,first(Size) as Size,first(Installs) as Installs,first(Type) as Type,first(Price) as Price,
+         | first(ContentRating) as Content_Rating,collect_set(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
          |  FROM global_temp.apps where App == '${apps.last}' """.stripMargin).toDF()
+
+
 
     var df4 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema)
     apps.foreach(app => {
 
       var auxDf = spark.sql(
-        s"""SELECT first(App) as App, collect_set(Category) as Values,
-           | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
-           | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
-           |  FROM global_temp.apps where App == '$app' """.stripMargin).toDF()
+        s"""SELECT first(App) as App, collect_set(Category) as Categories,
+           | first(Rating) as Rating, max(Reviews) as Reviews,first(Size) as Size,first(Installs) as Installs,first(Type) as Type,first(Price) as Price,
+           | first(ContentRating) as Content_Rating,collect_set(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
+           |  FROM global_temp.apps where App == '${app}' """.stripMargin).toDF()
 
       newDf = newDf.union(auxDf)
       df4 = newDf.join(df1, newDf("App") === df1("App2"), "left_outer").toDF()
-      df4.show()
-
     })
 
+    var df5 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema3)
     df4.createOrReplaceGlobalTempView("table")
     genres.foreach(genre => {
-        var auxDF = spark.sql("SELECT COUNT(*) as Count, AVG()")
+      var auxDF = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema3)
+      try {
+        auxDF = spark.sql(s"SELECT COUNT(*) as Count, AVG(Rating) as Average_Rating, avg(avg(Sentiment_Polarity)) as Average_Sentiment_Polarity  from global_temp.table" +
+          s" where array_contains('Genres','$genre')").toDF()
+      }
+      catch{
+        case exception: Exception =>({
+          auxDF = spark.sql(s"SELECT COUNT(*) as Count, AVG(Rating) as Average_Rating, avg(avg(Sentiment_Polarity)) as Average_Sentiment_Polarity  from global_temp.table" +
+            s" where 'Genres' like  '%$genre%'").toDF()
+        })
+      }
+      df5 = df5.union(auxDF)
+
     })
+    df5.show()
 
 
   }
