@@ -41,6 +41,9 @@ object App {
     val df3 = df2.filter("rating >= 4 and rating <= 10").orderBy(desc("rating"))
     df3.show()
 
+    df3.write.csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/best_apps.csv")
+
   }
+
 
 }
