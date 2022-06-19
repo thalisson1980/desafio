@@ -53,21 +53,29 @@ object App {
 
         })
         var newDf =  spark.sql(
-          s"""SELECT first(App), collect_set(Category) as Values,
-             | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
-             | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
+          s"""SELECT first(App) as App, collect_set(Category) as Categories,
+             | first(Rating) as Rating, max(Reviews) as Reviews,first(Size) as Size,first(Installs) as Installs,first(Type) as Type,first(Price) as Price,
+             | first(ContentRating) as Content_Rating,first(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
              |  FROM global_temp.apps where AppNew == '${apps.last}' """.stripMargin).toDF()
 
 
             apps.foreach(app =>{
           var auxDf = spark.sql(
-                s"""SELECT first(App), collect_set(Category) as Values,
-                   | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
-                   | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
-                   |  FROM global_temp.apps where AppNew == '$app' """.stripMargin).toDF()
+            s"""SELECT first(App) as App, collect_set(Category) as Categories,
+               | first(Rating) as Rating, max(Reviews) as Reviews,first(Size),first(Installs) as Installs,first(Type) as Type,first(Price) as Price,
+               | first(ContentRating) as Content_Rating,first(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
+               |  FROM global_temp.apps where AppNew == '${app}' """.stripMargin).toDF()
 
               newDf = newDf.union(auxDf)
+              newDf.show()
         })
+
+    val df = spark.createDataFrame(spark.sparkContext
+      .emptyRDD[Row], simpleSchema)
+    newDf.foreach(row =>{
+
+    })
+
 
   }
 
