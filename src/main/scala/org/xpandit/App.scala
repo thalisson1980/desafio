@@ -45,9 +45,9 @@ object App {
 
     ))
 
+
     var df1 = spark.read.schema(simpleSchema2).options(Map("inferSchema" -> "true", "delimiter" -> ","))
       .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore_user_reviews.csv")
-
     df1 = df1.na.fill(0).groupBy("App2").avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity")
     df1 = df1.withColumn("App2", regexp_replace(df1("App2"), "'", ""))
 
@@ -57,23 +57,40 @@ object App {
     df2 = df2.withColumn("App", regexp_replace(df2("App"), "'", ""))
     df2.createOrReplaceGlobalTempView("apps")
 
-    val df3 = df2.groupBy("App").max("Reviews").collect()
+    var genresDF = df2.select(df2("Genres")).distinct().collect()
+    var genres: ArrayBuffer[String] = new ArrayBuffer[String]
+    genres.append("Education")
+    genresDF.foreach( row => {
+      var resultSplit = row.getString(0).split(";")
+      resultSplit.foreach( splitGenre => {
+        var alreadyExists = false
+        genres.foreach(genre =>{
+          if(genre == splitGenre){
 
+              alreadyExists = true
+          }
+        })
+        if(!alreadyExists){
+          genres.append(splitGenre)
+        }
+      })
+    })
+
+
+    val df3 = df2.groupBy("App").max("Reviews").collect()
 
     val apps: ArrayBuffer[String] = new ArrayBuffer[String]
     df3.foreach(app => {
       apps.append(app.getString(0))
 
     })
-    import org.apache.spark.sql.functions._
-    var newDf = spark.sql(
-      s"""SELECT first(App) as App, collect_set(Category) as Values,
-         | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
-         | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
-         |  FROM global_temp.apps where App == '${apps.last}' """.stripMargin).toDF()
+
+    
+    var newDf = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema)
 
     var df4 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema)
     apps.foreach(app => {
+
       var auxDf = spark.sql(
         s"""SELECT first(App) as App, collect_set(Category) as Values,
            | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
@@ -81,11 +98,15 @@ object App {
            |  FROM global_temp.apps where App == '$app' """.stripMargin).toDF()
 
       newDf = newDf.union(auxDf)
-
-       df4 = newDf.join(df1, newDf("App") === df1("App2"), "left_outer").toDF()
-
+      df4 = newDf.join(df1, newDf("App") === df1("App2"), "left_outer").toDF()
 
     })
+
+    df4.createOrReplaceGlobalTempView("table")
+    genres.foreach(genre => {
+
+    })
+
 
   }
 
