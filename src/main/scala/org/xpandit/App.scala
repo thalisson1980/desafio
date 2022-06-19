@@ -69,13 +69,7 @@ object App {
               newDf = newDf.union(auxDf)
               newDf.show()
         })
-
-    val df = spark.createDataFrame(spark.sparkContext
-      .emptyRDD[Row], simpleSchema)
-    newDf.foreach(row =>{
-
-    })
-
+    
 
   }
 
