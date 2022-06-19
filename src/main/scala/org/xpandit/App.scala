@@ -85,8 +85,12 @@ object App {
 
     })
 
-    
-    var newDf = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema)
+
+    var newDf = spark.sql(
+      s"""SELECT first(App) as App, collect_set(Category) as Values,
+         | first(Rating), max(Reviews),first(Size),first(Installs),first(Type),first(Price),
+         | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
+         |  FROM global_temp.apps where App == '${apps.last}' """.stripMargin).toDF()
 
     var df4 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema)
     apps.foreach(app => {
@@ -99,12 +103,13 @@ object App {
 
       newDf = newDf.union(auxDf)
       df4 = newDf.join(df1, newDf("App") === df1("App2"), "left_outer").toDF()
+      df4.show()
 
     })
 
     df4.createOrReplaceGlobalTempView("table")
     genres.foreach(genre => {
-
+        var auxDF = spark.sql("SELECT COUNT(*) as Count, AVG()")
     })
 
 
