@@ -55,7 +55,7 @@ object App {
         var newDf =  spark.sql(
           s"""SELECT first(App) as App, collect_set(Category) as Categories,
              | first(Rating) as Rating, max(Reviews) as Reviews,first(Size) as Size,first(Installs) as Installs,first(Type) as Type,first(Price) as Price,
-             | first(ContentRating) as Content_Rating,first(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
+             | first(ContentRating) as Content_Rating,collect_set(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
              |  FROM global_temp.apps where AppNew == '${apps.last}' """.stripMargin).toDF()
 
 
@@ -63,7 +63,7 @@ object App {
           var auxDf = spark.sql(
             s"""SELECT first(App) as App, collect_set(Category) as Categories,
                | first(Rating) as Rating, max(Reviews) as Reviews,first(Size),first(Installs) as Installs,first(Type) as Type,first(Price) as Price,
-               | first(ContentRating) as Content_Rating,first(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
+               | first(ContentRating) as Content_Rating,collect_set(Genres) as Genres,first(LastUpdated) as Last_Updated ,first(CurrentVer)as Current_Version,first(AndroidVer) as Minimum_Android_Version
                |  FROM global_temp.apps where AppNew == '${app}' """.stripMargin).toDF()
 
               newDf = newDf.union(auxDf)
