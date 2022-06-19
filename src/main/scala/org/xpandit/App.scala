@@ -45,23 +45,23 @@ object App {
 
     ))
 
-    var df9 = spark.read.schema(simpleSchema2).options(Map("inferSchema" -> "true", "delimiter" -> ","))
+    var df1 = spark.read.schema(simpleSchema2).options(Map("inferSchema" -> "true", "delimiter" -> ","))
       .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore_user_reviews.csv")
 
-    val df13 = df9.na.fill(0).groupBy("App2").avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity")
-    val df10 = df13.withColumn("App2", regexp_replace(df13("App2"), "'", ""))
+    df1 = df1.na.fill(0).groupBy("App2").avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity")
+    df1 = df1.withColumn("App2", regexp_replace(df1("App2"), "'", ""))
 
 
-    val df2 = spark.read.option("header", true).schema(simpleSchema).options(Map("inferSchema" -> "true", "delimiter" -> ","))
+    var df2 = spark.read.option("header", true).schema(simpleSchema).options(Map("inferSchema" -> "true", "delimiter" -> ","))
       .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore.csv").orderBy(desc("Reviews"))
-    val df3 = df2.withColumn("App", regexp_replace(df2("App"), "'", ""))
-    df3.createOrReplaceGlobalTempView("apps")
+    df2 = df2.withColumn("App", regexp_replace(df2("App"), "'", ""))
+    df2.createOrReplaceGlobalTempView("apps")
 
-    val df4 = df3.groupBy("App").max("Reviews").collect()
+    val df3 = df2.groupBy("App").max("Reviews").collect()
 
 
     val apps: ArrayBuffer[String] = new ArrayBuffer[String]
-    df4.foreach(app => {
+    df3.foreach(app => {
       apps.append(app.getString(0))
 
     })
@@ -72,7 +72,7 @@ object App {
          | first(ContentRating),first(Genres),first(LastUpdated),first(CurrentVer),first(AndroidVer)
          |  FROM global_temp.apps where App == '${apps.last}' """.stripMargin).toDF()
 
-
+    var df4 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], simpleSchema)
     apps.foreach(app => {
       var auxDf = spark.sql(
         s"""SELECT first(App) as App, collect_set(Category) as Values,
@@ -82,12 +82,10 @@ object App {
 
       newDf = newDf.union(auxDf)
 
-       df9 = newDf.join(df10, newDf("App") === df10("App2"), "left_outer").toDF()
-      df9.show()
+       df4 = newDf.join(df1, newDf("App") === df1("App2"), "left_outer").toDF()
+
 
     })
-    df9.drop("App2").show()
-    df9.write.option("compression","gzip").parquet("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore_user_reviews.csv")
 
   }
 
