@@ -6,6 +6,7 @@ import org.apache.spark.sql.functions.{col, desc}
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructField, StructType}
 import org.json4s.scalap.scalasig.ClassFileParser.header
 import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.sql.functions.regexp_replace
 
 /**
  * @author ${user.name}
@@ -37,107 +38,37 @@ object App {
     ))
 
     val df2 = spark.read.option("header",true).schema(simpleSchema).options(Map("inferSchema"->"true","delimiter"->","))
-      .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore.csv")
+      .csv("C:/Users/Thalisson/Desktop/xpandit2/desafio/src/main/resources/csvfiles/googleplaystore.csv").orderBy(desc("Rating"))
 
-    //df2.createOrReplaceGlobalTempView("apps")
 
-    val df3 = df2.groupBy("App").max("Rating").collect()
+    val df3 = df2.withColumn("AppNew",regexp_replace(df2("App"),"'",""))
+    df3.createOrReplaceGlobalTempView("apps")
+    val df4 = df3.groupBy("AppNew").max("Rating").collect()
+
+
 
     val apps: ArrayBuffer[String] = new ArrayBuffer[String]
-    df3.foreach(app =>{
+    val apps2: ArrayBuffer[Object] = new ArrayBuffer[Object]
+    df4.foreach(app =>{
       apps.append(app.getString(0))
 
     })
-
     apps.foreach(app =>{
-      df2.filter("App" == app)
-    })
+     /*val auxdf =  df3.filter(s"AppNew == '$app'")
+     if( auxdf.count() > 1){
+       var greaterRating = 0.0
+       val categories: ArrayBuffer[String] = new ArrayBuffer[String]
+        auxdf.foreach( aux => {
+            if(greaterRating <= aux.getAs[Double](2)){
 
- /*   val apps: ArrayBuffer[app] = new ArrayBuffer[app]
-
-    df2.foreach(f => {
-      var appExists = false
-      var ratingValue = 0.0
-      var category = ""
-     if(apps.size > 0) {
-      apps.foreach(app =>{
-        if(app.app == f.get(0)){
-          appExists = true
-          ratingValue = f.getAs[Double](2)
-          category = f.getAs[String](1)
-        }
-        if(appExists){
-          var categoryExists = false
-          if(app.rating < ratingValue){
-            app.rating = ratingValue
-          }
-          app.categories.foreach( auxCategory =>{
-            if(auxCategory == category){
-              categoryExists = true
             }
-          })
-          if(!categoryExists){
-            app.categories.append(category)
-          }
-          println(app.categories)
-        }
-        if(!appExists){
-          var nova = new app()
-          nova.app = f.getAs(0)
-          nova.categories.append(f.getAs(1))
-          nova.rating = f.getAs(2)
-          nova.reviews = f.getAs(3)
-          nova.Size = f.getAs(4)
-          nova.Installs = f.getAs(5)
-          nova.Type = f.getAs(6)
-          nova.Price = f.getAs(7)
-          nova.Content_Rating = f.getAs(8)
-          nova.Genres = f.getAs(9)
-          nova.Last_Updated = f.getAs(10)
-          nova.Current_Ver = f.getAs(11)
-          nova.Android_Ver = f.getAs(12)
-          apps.append(nova)
-        }
-
-      })
-     }else{
-       var nova = new app()
-       nova.app = f.getAs(0)
-       nova.categories.append(f.getAs(1))
-       nova.rating = f.getAs(2)
-       nova.reviews = f.getAs(3)
-       nova.Size = f.getAs(4)
-       nova.Installs = f.getAs(5)
-       nova.Type = f.getAs(6)
-       nova.Price = f.getAs(7)
-       nova.Content_Rating = f.getAs(8)
-       nova.Genres = f.getAs(9)
-       nova.Last_Updated = f.getAs(10)
-       nova.Current_Ver = f.getAs(11)
-       nova.Android_Ver = f.getAs(12)
-       apps.append(nova)
+        })
      }
-
-    })
 */
-  }
-
-  class app  {
-
-    var app = ""
-    var categories: ArrayBuffer[String] = new ArrayBuffer[String]
-    var rating = 0.0
-    var reviews = 0.0
-    var Size = ""
-    var Installs = ""
-    var Type = ""
-    var Price = 0.0
-    var Content_Rating = ""
-    var Genres = ""
-    var Last_Updated = ""
-    var Current_Ver = ""
-    var Android_Ver = ""
+      apps2.append(spark.sql(s"SELECT first(App),(Select distinct(Category) from global_temp.apps where app == '$app' ) as Categories, max(Rating) as maxRating FROM global_temp.apps where AppNew == '$app' ").collect())
+    })
 
   }
+
 
 }
